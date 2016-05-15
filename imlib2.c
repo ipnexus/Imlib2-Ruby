@@ -1525,6 +1525,35 @@ static VALUE image_load(VALUE klass, VALUE filename) {
   return im_o;
 }
 
+static VALUE image_load_with_index(VALUE klass, VALUE filename, VALUE index) {
+  ImStruct        *im;
+  Imlib_Image      iim;
+  Imlib_Load_Error err;
+  VALUE            im_o = Qnil;
+  char            *path;
+
+  /* grab filename */
+  path = StringValuePtr(filename);
+  
+  iim = imlib_load_image_with_error_return_and_index(path, &err, NUM2INT(index));
+  if (err == IMLIB_LOAD_ERROR_NONE) {
+    im = malloc(sizeof(ImStruct));
+    im->im = iim;
+    im_o = Data_Wrap_Struct(klass, 0, im_struct_free, im);
+
+    if (rb_block_given_p())
+      rb_yield(im_o);
+  } else {
+    /* there was an error loading -- throw an exception if we weren't
+     * passed a block */
+
+    if (!rb_block_given_p())
+      raise_imlib_error(path, err);
+  }
+  
+  return im_o;
+}
+
 /*
  * Load an Imlib2::Image from a file (no exceptions or error).
  *
@@ -7885,6 +7914,7 @@ void Init_imlib2() {
   rb_define_singleton_method(cImage, "load_without_cache", image_load_without_cache, 1);
   rb_define_singleton_method(cImage, "load_immediately_without_cache", image_load_immediately_without_cache, 1);
   rb_define_singleton_method(cImage, "load_with_error_return", image_load_with_error_return, 1);
+  rb_define_singleton_method(cImage, "load_with_index", image_load_with_index, 2);
 
   /* save methods */
   rb_define_method(cImage, "save", image_save, 1);
