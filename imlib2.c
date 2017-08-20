@@ -1535,7 +1535,11 @@ static VALUE image_load_with_index(VALUE klass, VALUE filename, VALUE index) {
   /* grab filename */
   path = StringValuePtr(filename);
   
+#ifdef IMLIB2_HAVE_INDEX
   iim = imlib_load_image_with_error_return_and_index(path, &err, NUM2INT(index));
+#else
+  iim = imlib_load_image_with_error_return(path, &err);
+#endif
   if (err == IMLIB_LOAD_ERROR_NONE) {
     im = malloc(sizeof(ImStruct));
     im->im = iim;
